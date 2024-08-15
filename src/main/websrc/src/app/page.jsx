@@ -22,7 +22,7 @@ export default function Page() {
         return (
             <div>
                 <KeypadUserInput userInput={states.userInput}/>
-                <SecureKeypad keypad={states.keypad} onKeyPressed={actions.onKeyPressed}/>
+                <SecureKeypad keypad={states.keypad} onKeyPressed={actions.onKeyPressed} userInput={states.userInput}/>
             </div>
         );
     }

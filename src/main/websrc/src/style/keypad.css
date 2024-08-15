@@ -1,3 +1,40 @@
+.keypad-wrapper {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.user-input-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.input-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    margin: 0 10px;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.input-dot.filled {
+    background-color: #2454c8;
+}
+
+.keypad-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+}
+
 .keypad-container {
     position: relative;
     width: 100%;
@@ -58,22 +95,4 @@
     .keypad-container {
         width: 100%;
     }
-}
-
-.input-group-style {
-    padding: 50px;
-    text-align: center;
-}
-
-.input-char-style {
-    display: inline-block;
-    width: 23px;
-    height: 23px;
-    background-color: #e5e5e5;
-    border-radius: 50%;
-    margin: 8px;
-}
-
-.input-char-style.active {
-    background-color: #2454c8;
 }
