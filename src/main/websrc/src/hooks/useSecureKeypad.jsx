@@ -1,32 +1,36 @@
-"use client";
-
 import {useEffect, useState, useCallback} from 'react';
 import axios from "axios";
 import {JSEncrypt} from "jsencrypt";
-
-async function loadPublicKey() {
-  try {
-    const response = await fetch('/public_key.pem');
-    return await response.text();
-  } catch (error) {
-    console.error('Failed to load public key:', error);
-    return null;
-  }
-}
 
 export default function useSecureKeypad() {
   const [keypad, setKeypad] = useState(null);
   const [userInput, setUserInput] = useState([]);
   const [publicKey, setPublicKey] = useState(null);
+  const [result, setResult] = useState(null);
 
   useEffect(() => {
-    async function initialize() {
-      const key = await loadPublicKey();
-      setPublicKey(key);
-      getSecureKeypad();
-    }
-    initialize();
+    fetch('/public_key.pem')
+    .then(response => response.text())
+    .then(data => {
+      setPublicKey(data);
+    })
+    .catch(error => {
+      console.error('Error fetching public key:', error);
+    });
   }, []);
+
+  useEffect(() => {
+    console.log('User input:', userInput);
+    if (userInput.length === 6) {
+      sendUserInput();
+    }
+  }, [userInput]);
+
+  useEffect(() => {
+    if (result != null) {
+      alert(result);
+    }
+  }, [result]);
 
   const getSecureKeypad = useCallback(async () => {
     try {
@@ -39,50 +43,40 @@ export default function useSecureKeypad() {
     }
   }, []);
   
-  const onKeyPressed = useCallback((hash) => {
-    if (hash) {  // hash가 유효한 값인 경우에만 처리
-      console.log(`Button with hash ${hash} clicked`);
-      setUserInput(prev => {
-        const newInput = [...(prev || []), hash]  // prev가 null이나 undefined일 경우 빈 배열 사용
-        if (newInput.length == 6) {
-          alert(`입력된 값: ${newInput.join(', ')}`);
-          setTimeout(() => {
-            window.location.reload();
-          }, 100);
-        }
-        return newInput;
-      });
-    } else {
-      console.warn('Clicked button has no hash value');
-    }
-  }, []);
+  const onKeyPressed = (value) => {
+    // console.log(`Button ${value} clicked`);
+    setUserInput([...userInput, value]);
+  }
 
-  const resetUserInput = useCallback(() => {
-    setUserInput([]);
-  }, []);
 
-  const sendUserInput = useCallback(async () => {
-    if (!publicKey) {
-      console.error("Public key not available");
-      return;
-    }
-
+  const sendUserInput = useCallback(() => {
+    // alert('Sending user input: ' + userInput.join('\n'));
     const encrypt = new JSEncrypt();
+    const data = userInput.join('');
+    // alert('User input: ' + data);
     encrypt.setPublicKey(publicKey);
-    const encryptedData = encrypt.encrypt(userInput.join(','));
+    const encryptedPayload = encrypt.encrypt(data);
+    // console.log(encryptedPayload);
+    // alert('Encrypted payload: ' + encryptedPayload);
 
-    try {
-      const response = await axios.post('/api/verify', {
-        encryptedData: encryptedData
-      });
-      console.log("Server response:", response.data);
-      alert("입력이 성공적으로 전송되었습니다.");
-      resetUserInput();
-    } catch (error) {
-      console.error("Error sending encrypted data:", error);
-      alert("입력 전송 중 오류가 발생했습니다.");
+    const payload = {
+      encryptedData: encryptedPayload,
+      sessionId: keypad.sessionId
     }
-  }, [publicKey, resetUserInput, userInput]);
+    // alert('Sending payload: ' + JSON.stringify(payload));
+    axios.post('/api/keypad/verify', payload)
+      .then(response => {
+        const result = response.data;
+        console.log(result);
+        setResult(result);
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    
+    setUserInput([]);
+    getSecureKeypad();
+  }, [userInput, keypad, publicKey]);
 
   return {
     states: {
@@ -92,7 +86,6 @@ export default function useSecureKeypad() {
     actions: {
       getSecureKeypad,
       onKeyPressed,
-      resetUserInput,
       sendUserInput
     }
   }
